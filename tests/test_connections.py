@@ -32,7 +32,7 @@ def temp_project_root() -> Generator[Path, None, None]:
                 "database_directory": "database",
                 "duckdb_file": "database/medical_rag.duckdb",
             },
-            "embedding": {"model_name": "test-model", "dimensions": 1024},
+            "embedding": {"model_name": "test-model", "dimensions": 768},
             "chunking": {"chunk_size_tokens": 750, "chunk_overlap_tokens": 150},
             "retrieval": {"top_k": 5},
             "bedrock": {

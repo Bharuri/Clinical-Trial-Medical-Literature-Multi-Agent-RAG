@@ -52,7 +52,7 @@ class ChunkStorage:
         - chunk_type: 'text' or 'table'
         - section_header: Section title/heading
         - content: Text or Markdown table content
-        - embedding: FLOAT[1024] vector
+        - embedding: FLOAT[768] vector
 
         Raises:
             StorageError: If table creation fails
@@ -61,7 +61,7 @@ class ChunkStorage:
             # Drop existing table if it exists (for fresh start)
             self.conn.execute(f"DROP TABLE IF EXISTS {self.TABLE_NAME}")
 
-            # Create table with FLOAT[1024] embedding column
+            # Create table with FLOAT[768] embedding column
             create_sql = f"""
             CREATE TABLE {self.TABLE_NAME} (
                 id VARCHAR PRIMARY KEY,
@@ -70,7 +70,7 @@ class ChunkStorage:
                 chunk_type VARCHAR NOT NULL,
                 section_header VARCHAR NOT NULL,
                 content VARCHAR NOT NULL,
-                embedding FLOAT[1024] NOT NULL
+                embedding FLOAT[768] NOT NULL
             )
             """
             self.conn.execute(create_sql)
@@ -88,7 +88,7 @@ class ChunkStorage:
 
         Args:
             chunks: List of Chunk objects
-            embeddings: List of numpy arrays (1024-dimensional)
+            embeddings: List of numpy arrays (768-dimensional)
 
         Returns:
             Number of chunks inserted
@@ -110,10 +110,10 @@ class ChunkStorage:
 
             for chunk, embedding in zip(chunks, embeddings):
                 # Validate embedding
-                if embedding.shape[0] != 1024:
+                if embedding.shape[0] != 768:
                     raise StorageError(
                         f"Embedding for chunk '{chunk.source_file}' has invalid dimension: "
-                        f"{embedding.shape[0]} (expected 1024)"
+                        f"{embedding.shape[0]} (expected 768)"
                     )
 
                 # Convert embedding to list for DuckDB insertion

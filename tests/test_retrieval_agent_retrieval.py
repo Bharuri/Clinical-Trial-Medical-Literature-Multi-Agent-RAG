@@ -21,7 +21,7 @@ from src.retrieval_agent.retrieval import (
 )
 from src.utils.config import Config
 
-DIMS = 1024
+DIMS = 768
 
 
 class FakeEncoder:
@@ -75,7 +75,7 @@ def db_path() -> Generator[str, None, None]:
         ]
         for row_id, source, page, ctype, header, content, vec in rows:
             conn.execute(
-                "INSERT INTO medical_document_chunks VALUES (?, ?, ?, ?, ?, ?, CAST(? AS FLOAT[1024]))",
+                "INSERT INTO medical_document_chunks VALUES (?, ?, ?, ?, ?, ?, CAST(? AS FLOAT[768]))",
                 [row_id, source, page, ctype, header, content, vec.tolist()],
             )
         conn.close()

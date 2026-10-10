@@ -33,7 +33,7 @@ def temp_project_root() -> Generator[Path, None, None]:
             },
             "embedding": {
                 "model_name": "sentence-transformers/test-model",
-                "dimensions": 1024,
+                "dimensions": 768,
             },
             "chunking": {
                 "chunk_size_tokens": 750,
@@ -72,7 +72,7 @@ class TestConfigurationLoading:
         config = Config(config_path)
         
         assert config.get_embedding_model() == "sentence-transformers/test-model"
-        assert config.get_embedding_dimensions() == 1024
+        assert config.get_embedding_dimensions() == 768
 
     def test_config_file_not_found(self) -> None:
         """Configuration should raise error if file does not exist."""
@@ -115,7 +115,7 @@ class TestPathResolution:
                 "database_directory": str(new_db_dir),
                 "duckdb_file": "database/medical_rag.duckdb",
             },
-            "embedding": {"model_name": "test", "dimensions": 1024},
+            "embedding": {"model_name": "test", "dimensions": 768},
             "chunking": {"chunk_size_tokens": 750, "chunk_overlap_tokens": 150},
             "retrieval": {"top_k": 5},
             "bedrock": {
@@ -168,10 +168,10 @@ class TestConfigurationValues:
         config_path = temp_project_root / "config.yaml"
         config = Config(config_path)
         
-        assert config.get_embedding_dimensions() == 1024
+        assert config.get_embedding_dimensions() == 768
 
-    def test_embedding_dimensions_must_be_1024(self, temp_project_root: Path) -> None:
-        """Should raise error if embedding dimensions are not 1024."""
+    def test_embedding_dimensions_must_be_768(self, temp_project_root: Path) -> None:
+        """Should raise error if embedding dimensions are not 768."""
         config_path = temp_project_root / "config.yaml"
         
         config_data = {
@@ -180,7 +180,7 @@ class TestConfigurationValues:
                 "database_directory": "database",
                 "duckdb_file": "database/medical_rag.duckdb",
             },
-            "embedding": {"model_name": "test", "dimensions": 768},  # Wrong dimension
+            "embedding": {"model_name": "test", "dimensions": 512},  # Wrong dimension
             "chunking": {"chunk_size_tokens": 750, "chunk_overlap_tokens": 150},
             "retrieval": {"top_k": 5},
             "bedrock": {
@@ -195,7 +195,7 @@ class TestConfigurationValues:
         
         config = Config(config_path)
         
-        with pytest.raises(ConfigurationError, match="must be 1024"):
+        with pytest.raises(ConfigurationError, match="must be 768"):
             config.get_embedding_dimensions()
 
     def test_get_chunk_configuration(self, temp_project_root: Path) -> None:
@@ -269,7 +269,7 @@ class TestSingletonBehavior:
         config = get_config(config_path)
         
         assert config is not None
-        assert config.get_embedding_dimensions() == 1024
+        assert config.get_embedding_dimensions() == 768
 
 
 class TestMissingConfiguration:
@@ -284,7 +284,7 @@ class TestMissingConfiguration:
                 "database_directory": "database",
                 "duckdb_file": "database/medical_rag.duckdb",
             },
-            "embedding": {"model_name": "test", "dimensions": 1024},
+            "embedding": {"model_name": "test", "dimensions": 768},
             "chunking": {"chunk_size_tokens": 750, "chunk_overlap_tokens": 150},
             "retrieval": {"top_k": 5},
             "bedrock": {
@@ -312,7 +312,7 @@ class TestMissingConfiguration:
                 "database_directory": "database",
                 "duckdb_file": "database/medical_rag.duckdb",
             },
-            "embedding": {"dimensions": 1024},  # Missing model_name
+            "embedding": {"dimensions": 768},  # Missing model_name
             "chunking": {"chunk_size_tokens": 750, "chunk_overlap_tokens": 150},
             "retrieval": {"top_k": 5},
             "bedrock": {

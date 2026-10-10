@@ -1,7 +1,7 @@
 """
 Read-only access to the medical_document_chunks table for the Chunk Table tab.
 
-The embedding column is left out of every query. It holds 1,024 floats per row,
+The embedding column is left out of every query. It holds 768 floats per row,
 which is not useful to read in a table view.
 """
 

@@ -289,7 +289,7 @@ def main() -> None:
     st.title("🧬 Clinical Trial & Medical Literature Multi-Agent RAG")
     st.caption(
         "Answers from your PDF library using DuckDB vector search, "
-        "1,024-dimensional Sentence Transformers embeddings, and Amazon Bedrock."
+        "768-dimensional Sentence Transformers embeddings, and Amazon Bedrock."
     )
 
     render_sidebar(config)

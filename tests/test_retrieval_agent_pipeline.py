@@ -58,7 +58,7 @@ class FakeRetriever:
         return RetrievalResult(
             question=question,
             route="both",
-            query_dimensions=1024,
+            query_dimensions=768,
             chunks=list(self.chunks),
         )
 
@@ -198,7 +198,7 @@ class TestCli:
         output = capsys.readouterr().out
         assert "trial.pdf" in output
         assert "p. 2" in output
-        assert "dimensions: 1024" in output
+        assert "dimensions: 768" in output
 
     def test_full_mode_without_credentials_returns_two(self, monkeypatch, capsys):
         monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)

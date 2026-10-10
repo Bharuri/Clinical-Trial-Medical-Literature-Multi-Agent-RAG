@@ -9,10 +9,10 @@ paths:
   accepted_answers_duckdb_file: "database/accepted_answers.duckdb"
 
 # Embedding model configuration
-# Using Sentence Transformers with 1,024-dimensional vectors (as required)
+# Using Sentence Transformers with 768-dimensional vectors (as required)
 embedding:
-  model_name: "BAAI/bge-large-en-v1.5"
-  dimensions: 1024
+  model_name: "BAAI/bge-base-en-v1.5"
+  dimensions: 768
 
 # Chunking configuration for narrative text
 # Splits are recursive with overlap; do not cross table boundaries

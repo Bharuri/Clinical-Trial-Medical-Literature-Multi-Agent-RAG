@@ -51,11 +51,11 @@ def sample_chunks() -> list:
 
 @pytest.fixture
 def sample_embeddings() -> list:
-    """Create sample 1024-dimensional embeddings."""
+    """Create sample 768-dimensional embeddings."""
     embeddings = []
     for i in range(3):
         # Create a random vector
-        emb = np.random.randn(1024)
+        emb = np.random.randn(768)
         # L2-normalize
         emb = emb / np.linalg.norm(emb)
         embeddings.append(emb)
@@ -99,7 +99,7 @@ class TestChunkStorage:
         storage.insert_chunks_batch([
             Chunk("test", "text", 1, "test.pdf", "header")
         ], [
-            np.random.randn(1024) / np.linalg.norm(np.random.randn(1024))
+            np.random.randn(768) / np.linalg.norm(np.random.randn(768))
         ])
 
         count = storage.get_chunk_count()
@@ -157,8 +157,8 @@ class TestChunkStorage:
         storage.create_table()
 
         chunk = Chunk("test", "text", 1, "test.pdf")
-        # Wrong dimension (768 instead of 1024)
-        invalid_emb = np.random.randn(768)
+        # Wrong dimension (512 instead of 768)
+        invalid_emb = np.random.randn(512)
         invalid_emb = invalid_emb / np.linalg.norm(invalid_emb)
 
         with pytest.raises(StorageError, match="invalid dimension"):
@@ -203,7 +203,7 @@ class TestChunkStorage:
             source_file="important.pdf",
             section_header="Conclusion",
         )
-        emb = np.random.randn(1024)
+        emb = np.random.randn(768)
         emb = emb / np.linalg.norm(emb)
 
         storage.insert_chunks_batch([chunk], [emb])
@@ -236,7 +236,7 @@ class TestChunkStorage:
             assert result is not None
             retrieved_emb = result[0]
             assert isinstance(retrieved_emb, (list, tuple))
-            assert len(retrieved_emb) == 1024
+            assert len(retrieved_emb) == 768
         finally:
             storage.close()
 
@@ -283,8 +283,8 @@ class TestChunkStorage:
         ]
 
         embs = [
-            np.random.randn(1024) / np.linalg.norm(np.random.randn(1024)),
-            np.random.randn(1024) / np.linalg.norm(np.random.randn(1024)),
+            np.random.randn(768) / np.linalg.norm(np.random.randn(768)),
+            np.random.randn(768) / np.linalg.norm(np.random.randn(768)),
         ]
 
         storage.insert_chunks_batch(chunks, embs)
@@ -309,7 +309,7 @@ class TestChunkStorage:
         # Create large chunk (10KB of text)
         large_content = "word " * 2000
         chunk = Chunk(large_content, "text", 1, "large.pdf")
-        emb = np.random.randn(1024) / np.linalg.norm(np.random.randn(1024))
+        emb = np.random.randn(768) / np.linalg.norm(np.random.randn(768))
 
         storage.insert_chunks_batch([chunk], [emb])
 

@@ -18,7 +18,7 @@ Build a Streamlit application that answers clinical trial and medical literature
   - content: extracted text or Markdown table
 3. Embeddings and DuckDB Storage
 - Generate embeddings locally using Hugging Face sentence-transformers.
-- Use an embedding model that outputs 1,024-dimensional vectors.
+- Use an embedding model that outputs 768-dimensional vectors.
 - L2-normalize generated vectors.
 - Process text and table chunks in batches.
 - Store chunks in a DuckDB table named medical_document_chunks with these columns:
@@ -28,9 +28,9 @@ Build a Streamlit application that answers clinical trial and medical literature
   - chunk_type: VARCHAR, either text or table
   - section_header: VARCHAR
   - content: VARCHAR
-  - embedding: FLOAT[1024]
+  - embedding: FLOAT[768]
 - Install and load DuckDB's vss extension.
-- Validate that each embedding contains exactly 1,024 dimensions before inserting it.
+- Validate that each embedding contains exactly 768 dimensions before inserting it.
 - Create an HNSW index on the embedding column using cosine distance.
 - Use safe parameter binding and batch inserts.
 4. Amazon Bedrock Configuration
@@ -43,7 +43,7 @@ Build a Streamlit application that answers clinical trial and medical literature
 - Create the Bedrock runtime client using the credentials and region provided for that request.
 5. Query Routing and Retrieval
 - Analyze each user question to determine whether it needs narrative context, structured data, or both.
-- Generate a 1,024-dimensional query embedding.
+- Generate a 768-dimensional query embedding.
 - Search medical_document_chunks in DuckDB for the most relevant chunks.
 - Retrieve the top-k relevant chunks, including both narrative text and tables when needed for numerical questions.
 - Pass the retrieved content and its source_file, page_number, chunk_type, and section_header metadata to the next agent.
@@ -61,7 +61,7 @@ Build a Streamlit application that answers clinical trial and medical literature
 - Return is_approved: false with a concise critique when corrections are needed, and send the draft back for revision.
 8. Streamlit User Interface
 - Display the title: 🧬 Clinical Trial & Medical Literature Multi-Agent RAG.
-- Display a subtitle describing DuckDB, 1,024-dimensional Sentence Transformers embeddings, and Amazon Bedrock.
+- Display a subtitle describing DuckDB, 768-dimensional Sentence Transformers embeddings, and Amazon Bedrock.
 - Add a sidebar section titled 🔐 Secure AWS Configuration with:
   - AWS Access Key ID
   - AWS Secret Access Key

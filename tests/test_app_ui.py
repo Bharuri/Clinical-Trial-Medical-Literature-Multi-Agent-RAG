@@ -39,7 +39,7 @@ def approved_result() -> PipelineResult:
         retrieval=RetrievalResult(
             question="What was the hazard ratio?",
             route="text",
-            query_dimensions=1024,
+            query_dimensions=768,
             chunks=[CHUNK],
         ),
         draft=draft,
@@ -69,7 +69,7 @@ def rejected_result() -> PipelineResult:
         retrieval=RetrievalResult(
             question="What was the hazard ratio?",
             route="text",
-            query_dimensions=1024,
+            query_dimensions=768,
             chunks=[CHUNK],
         ),
         draft="The hazard ratio was 0.8.",
@@ -98,7 +98,7 @@ def revised_result() -> PipelineResult:
         retrieval=RetrievalResult(
             question="What was the hazard ratio?",
             route="text",
-            query_dimensions=1024,
+            query_dimensions=768,
             chunks=[CHUNK],
         ),
         draft=final,
@@ -222,7 +222,7 @@ def test_retrieval_details_and_logs_are_rendered(app):
 
     assert not app.exception
     metrics = {m.label: m.value for m in app.metric}
-    assert metrics["Query vector dimensions"] == "1024"
+    assert metrics["Query vector dimensions"] == "768"
     assert metrics["HNSW matches"] == "1"
     assert metrics["Route"] == "text"
 

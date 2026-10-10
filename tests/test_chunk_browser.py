@@ -20,7 +20,7 @@ CREATE TABLE medical_document_chunks (
     chunk_type VARCHAR NOT NULL,
     section_header VARCHAR NOT NULL,
     content VARCHAR NOT NULL,
-    embedding FLOAT[1024] NOT NULL
+    embedding FLOAT[768] NOT NULL
 )
 """
 
@@ -45,7 +45,7 @@ def make_db(db_file: Path, rows=ROWS) -> str:
         for row in rows:
             conn.execute(
                 "INSERT INTO medical_document_chunks VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [*row, [0.0] * 1024],
+                [*row, [0.0] * 768],
             )
     finally:
         conn.close()

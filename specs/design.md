@@ -31,7 +31,7 @@ Chunk structure:
 - content
 2.3 Embedding Generator
 Responsibilities:
-- Use a local Sentence Transformers model that returns 1,024-dimensional vectors.
+- Use a local Sentence Transformers model that returns 768-dimensional vectors.
 - L2-normalize vectors.
 - Generate embeddings in batches for both text and table chunks.
 - Validate vector dimensions before storage.
@@ -44,7 +44,7 @@ Use a table named medical_document_chunks containing:
 - section_header
 - content
 - embedding
-The embedding column uses FLOAT[1024]. Load DuckDB's vss extension and create an HNSW index using cosine distance.
+The embedding column uses FLOAT[768]. Load DuckDB's vss extension and create an HNSW index using cosine distance.
 2.5 Bedrock Client Configuration
 For each user request, initialize the Bedrock runtime client using the supplied:
 - AWS access key ID
@@ -77,7 +77,7 @@ PDF Processing Flow
 4. Split narrative text using the configured chunk size and overlap.
 5. Attach metadata to each chunk.
 6. Generate and normalize embeddings in batches.
-7. Validate that each vector has 1,024 dimensions.
+7. Validate that each vector has 768 dimensions.
 8. Store chunk content, metadata, and embedding in DuckDB.
 Question Answering Flow
 1. Receive the user's question from Streamlit.
@@ -100,7 +100,7 @@ page_number	INTEGER	Source page number
 chunk_type	VARCHAR	text or table
 section_header	VARCHAR	Nearest section heading
 content	VARCHAR	Text or Markdown table
-embedding	FLOAT[1024]	Normalized chunk embedding
+embedding	FLOAT[768]	Normalized chunk embedding
 
 
 The id value is a UUID. Each row represents one text chunk or one complete table chunk.
@@ -131,7 +131,7 @@ Main Area
 - The reset button clears session state and reruns the application.
 - Session data follows the Streamlit WebSocket session lifecycle.
 8. Error and Validation Handling
-- Validate that every generated embedding has exactly 1,024 dimensions before insertion.
+- Validate that every generated embedding has exactly 768 dimensions before insertion.
 - Do not insert a chunk whose embedding has an invalid dimension.
 - Use parameter binding for database inserts.
 - Batch embedding generation and inserts.

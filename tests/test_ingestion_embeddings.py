@@ -28,12 +28,12 @@ class TestEmbeddingGenerator:
         # This may download the model if not cached
         gen = EmbeddingGenerator()
         assert gen is not None
-        assert gen.expected_dimensions == 1024
+        assert gen.expected_dimensions == 768
 
     def test_generator_invalid_dimensions(self) -> None:
-        """Should reject non-1024 dimensions."""
-        with pytest.raises(EmbeddingError, match="Expected dimensions must be 1024"):
-            EmbeddingGenerator(expected_dimensions=768)
+        """Should reject non-768 dimensions."""
+        with pytest.raises(EmbeddingError, match="Expected dimensions must be 768"):
+            EmbeddingGenerator(expected_dimensions=512)
 
     def test_generator_model_info(self) -> None:
         """Should return model information."""
@@ -43,15 +43,15 @@ class TestEmbeddingGenerator:
         assert "model_name" in info
         assert "expected_dimensions" in info
         assert "batch_size" in info
-        assert info["expected_dimensions"] == 1024
+        assert info["expected_dimensions"] == 768
 
     def test_encode_single_text(self) -> None:
-        """Should encode a single text into 1024-dimensional vector."""
+        """Should encode a single text into 768-dimensional vector."""
         gen = EmbeddingGenerator()
         embedding = gen.encode_text("Hello world")
 
         assert isinstance(embedding, np.ndarray)
-        assert embedding.shape[0] == 1024
+        assert embedding.shape[0] == 768
         assert np.issubdtype(embedding.dtype, np.floating)
 
     def test_encode_multiple_texts(self) -> None:
@@ -62,7 +62,7 @@ class TestEmbeddingGenerator:
 
         assert len(embeddings) == 3
         assert all(isinstance(e, np.ndarray) for e in embeddings)
-        assert all(e.shape[0] == 1024 for e in embeddings)
+        assert all(e.shape[0] == 768 for e in embeddings)
 
     def test_encode_empty_list(self) -> None:
         """Should return empty list for empty input."""
@@ -93,13 +93,13 @@ class TestEmbeddingGenerator:
         gen = EmbeddingGenerator()
 
         with pytest.raises(EmbeddingError, match="must be numpy array"):
-            gen.validate_embedding([1.0] * 1024)
+            gen.validate_embedding([1.0] * 768)
 
     def test_validate_embedding_wrong_dimension(self) -> None:
         """Should reject embeddings with wrong dimension."""
         gen = EmbeddingGenerator()
 
-        wrong_dim = np.random.randn(768)
+        wrong_dim = np.random.randn(512)
         with pytest.raises(EmbeddingError, match="dimension"):
             gen.validate_embedding(wrong_dim)
 
@@ -108,7 +108,7 @@ class TestEmbeddingGenerator:
         gen = EmbeddingGenerator()
 
         # Create an unnormalized embedding
-        unnormalized = np.random.randn(1024)
+        unnormalized = np.random.randn(768)
         with pytest.raises(EmbeddingError, match="not properly L2-normalized"):
             gen.validate_embedding(unnormalized)
 
@@ -143,7 +143,7 @@ class TestEmbeddingGenerator:
         embeddings = gen.encode_texts(texts)
 
         assert len(embeddings) == 10
-        assert all(e.shape[0] == 1024 for e in embeddings)
+        assert all(e.shape[0] == 768 for e in embeddings)
 
     def test_embedding_properties(self) -> None:
         """Generated embeddings should have expected properties."""
@@ -154,8 +154,8 @@ class TestEmbeddingGenerator:
         for emb in embeddings:
             # Should be 1D array
             assert emb.ndim == 1
-            # Should have 1024 dimensions
-            assert emb.shape[0] == 1024
+            # Should have 768 dimensions
+            assert emb.shape[0] == 768
             # Should be normalized (norm ~1)
             norm = np.linalg.norm(emb)
             assert 0.99 <= norm <= 1.01
@@ -170,7 +170,7 @@ class TestEmbeddingGenerator:
         long_text = " ".join(["word"] * 1000)
         embedding = gen.encode_text(long_text)
 
-        assert embedding.shape[0] == 1024
+        assert embedding.shape[0] == 768
         assert np.linalg.norm(embedding) <= 1.01
 
     def test_encode_special_characters(self) -> None:
@@ -185,7 +185,7 @@ class TestEmbeddingGenerator:
 
         embeddings = gen.encode_texts(texts)
         assert len(embeddings) == 3
-        assert all(e.shape[0] == 1024 for e in embeddings)
+        assert all(e.shape[0] == 768 for e in embeddings)
 
     def test_single_vs_batch_consistency(self) -> None:
         """Encoding single text vs in batch should give same result."""

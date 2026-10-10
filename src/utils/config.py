@@ -141,12 +141,12 @@ class Config:
         return model
 
     def get_embedding_dimensions(self) -> int:
-        """Get the expected embedding dimensions (should be 1024)."""
+        """Get the expected embedding dimensions (should be 768)."""
         dims = self._config.get("embedding", {}).get("dimensions")
         if dims is None:
             raise ConfigurationError("Embedding dimensions not configured in config.yaml")
-        if dims != 1024:
-            raise ConfigurationError(f"Embedding dimensions must be 1024, got {dims}")
+        if dims != 768:
+            raise ConfigurationError(f"Embedding dimensions must be 768, got {dims}")
         return dims
 
     def get_chunk_size(self) -> int:

@@ -1,7 +1,7 @@
 """
 Embedding generation and normalization using Sentence Transformers.
 
-Generates 1,024-dimensional embeddings and L2-normalizes them for vector search.
+Generates 768-dimensional embeddings and L2-normalizes them for vector search.
 """
 
 from typing import List, Optional
@@ -20,8 +20,8 @@ class EmbeddingGenerator:
 
     def __init__(
         self,
-        model_name: str = "BAAI/bge-large-en-v1.5",
-        expected_dimensions: int = 1024,
+        model_name: str = "BAAI/bge-base-en-v1.5",
+        expected_dimensions: int = 768,
         batch_size: int = 32,
     ):
         """
@@ -29,14 +29,14 @@ class EmbeddingGenerator:
 
         Args:
             model_name: HuggingFace model identifier
-            expected_dimensions: Expected embedding dimension (must be 1024)
+            expected_dimensions: Expected embedding dimension (must be 768)
             batch_size: Batch size for embedding generation
 
         Raises:
             EmbeddingError: If model cannot be loaded or dimensions don't match
         """
-        if expected_dimensions != 1024:
-            raise EmbeddingError(f"Expected dimensions must be 1024, got {expected_dimensions}")
+        if expected_dimensions != 768:
+            raise EmbeddingError(f"Expected dimensions must be 768, got {expected_dimensions}")
 
         self.model_name = model_name
         self.expected_dimensions = expected_dimensions
@@ -107,7 +107,7 @@ class EmbeddingGenerator:
             text: Text to embed
 
         Returns:
-            L2-normalized embedding vector (numpy array of 1024 dimensions)
+            L2-normalized embedding vector (numpy array of 768 dimensions)
 
         Raises:
             EmbeddingError: If encoding fails

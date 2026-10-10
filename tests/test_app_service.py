@@ -54,7 +54,7 @@ class FakeRetriever:
         self.closed = False
 
     def retrieve(self, question: str, top_k=None) -> RetrievalResult:
-        return RetrievalResult(question=question, route="text", query_dimensions=1024, chunks=[CHUNK])
+        return RetrievalResult(question=question, route="text", query_dimensions=768, chunks=[CHUNK])
 
     def close(self) -> None:
         self.closed = True
@@ -133,4 +133,4 @@ class TestAnswerQuestion:
         assert result.is_approved
         assert result.final_answer == GOOD_DRAFT
         assert result.retrieval.match_count == 1
-        assert result.retrieval.query_dimensions == 1024
+        assert result.retrieval.query_dimensions == 768

@@ -20,7 +20,7 @@ This task established the foundation for the Clinical Trial & Medical Literature
    - Database: `database/medical_rag.duckdb`
    - Accepted answers: `database/accepted_answers.duckdb` (separate file, written only when a user clicks "Accept this answer")
    - The app's **Chunk Table** tab browses `medical_document_chunks` read-only, with content and source filters (embeddings are not shown)
-   - Embeddings: 1,024-dimensional Sentence Transformers
+   - Embeddings: 768-dimensional Sentence Transformers
    - Chunking: 500-1000 tokens with 100-200 token overlap
    - Retrieval: Top-10 results
    - Bedrock: Nova 2 Lite (`us.amazon.nova-2-lite-v1:0`, default, user-configurable)
@@ -52,15 +52,15 @@ config = get_config()
 # Access settings (automatically resolved from project root)
 pdf_dir = config.get_pdf_directory()  # Returns: Path to data/pdfs
 db_file = config.get_duckdb_file()     # Returns: Path to database/medical_rag.duckdb
-model = config.get_embedding_model()   # Returns: BAAI/bge-large-en-v1.5
-dims = config.get_embedding_dimensions()  # Returns: 1024 (validated)
+model = config.get_embedding_model()   # Returns: BAAI/bge-base-en-v1.5
+dims = config.get_embedding_dimensions()  # Returns: 768 (validated)
 ```
 
 ### Key Features
 
 - **Automatic Project Root Detection**: Finds `config.yaml` by searching up from current directory
 - **Path Independence**: Works correctly whether you run from project root or any subdirectory
-- **Validation**: Enforces critical constraints (e.g., embeddings must be 1024-dimensional)
+- **Validation**: Enforces critical constraints (e.g., embeddings must be 768-dimensional)
 - **Singleton Pattern**: Single configuration instance reused throughout application
 - **Error Handling**: Clear error messages for missing or invalid configuration
 
@@ -158,7 +158,7 @@ pytest tests/test_config.py -v
 1. **Task 2 — Implement PDF Ingestion**
    - Create `src/ingestion/pdf_extraction.py` — Read PDFs and separate tables from text
    - Create `src/ingestion/chunking.py` — Split narrative text and convert tables to Markdown
-   - Create `src/ingestion/embeddings.py` — Generate 1,024-dimensional embeddings in batches
+   - Create `src/ingestion/embeddings.py` — Generate 768-dimensional embeddings in batches
    - Create `src/ingestion/storage.py` — Store chunks and embeddings in DuckDB with HNSW index
    - Create `src/ingestion/run.py` — Independently runnable ingestion script
 
@@ -208,7 +208,7 @@ pytest tests/test_config.py -v
 
 ✅ All required directories created  
 ✅ Configuration file with all required settings  
-✅ 1,024-dimensional embeddings configured  
+✅ 768-dimensional embeddings configured  
 ✅ Chunk size and overlap configured (500-1000 tokens, 100-200 overlap)  
 ✅ Top-k retrieval configured  
 ✅ Default Bedrock model specified  
