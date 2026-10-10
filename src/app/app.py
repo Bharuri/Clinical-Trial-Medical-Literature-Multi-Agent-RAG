@@ -9,9 +9,15 @@ disk, cookies, or local storage, except answers the user explicitly accepts,
 which are saved to the accepted-answers DuckDB file.
 """
 
+import sys
+from pathlib import Path
 from typing import List, Optional
 import duckdb
 import streamlit as st
+
+_ROOT = str(Path(__file__).resolve().parents[2])
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 from src.app.accepted_answers import load_accepted_answers, save_accepted_answer
 from src.app.chunk_browser import list_chunk_sources, load_chunks
