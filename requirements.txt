@@ -1,5 +1,5 @@
 # Core dependencies for Clinical Trial & Medical Literature Multi-Agent RAG
---extra-index-url https://download.pytorch.org/whl/cu121
+--extra-index-url https://download.pytorch.org/whl/cpu
 
 # PDF processing
 pdfplumber==0.10.3
@@ -9,7 +9,7 @@ reportlab==4.2.0
 
 # NLP and embeddings
 sentence-transformers==3.0.1
-torch==2.2.2+cu121  # CUDA 12.1 build for the RTX 4050; 2.2+ ships Python 3.12 wheels
+torch==2.2.2+cpu  # CPU build so Streamlit Community Cloud can install it; local GPU build is in requirements-local-gpu.txt
 transformers==4.36.2
 nltk==3.8.1
 huggingface_hub==0.36.2  # Direct import for downloading the embedding model; already pulled in by sentence-transformers

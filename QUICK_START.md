@@ -102,7 +102,8 @@ client = BedrockClient.create_client(
 ```
 project-root/
 ├── config.yaml                    ← Single source of truth
-├── requirements.txt               ← Install with: pip install -r requirements.txt
+├── requirements.txt               ← CPU torch; used by Streamlit Cloud and local installs
+├── requirements-local-gpu.txt     ← Same packages with CUDA 12.1 torch (local GPU only)
 ├── data/
 │   └── pdfs/                      ← 5 sample PDF files
 │       ├── 2406.10292v3.pdf
@@ -128,8 +129,11 @@ project-root/
 ## Running Tests (When Python Available)
 
 ```bash
-# Install dependencies
+# Install dependencies (CPU torch, works on any machine and on Streamlit Cloud)
 pip install -r requirements.txt
+
+# Local NVIDIA GPU instead (CUDA 12.1 torch build, faster ingestion)
+pip install -r requirements-local-gpu.txt
 
 # Run all tests
 pytest tests/ -v
