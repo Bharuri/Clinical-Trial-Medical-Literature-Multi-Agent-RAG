@@ -10,7 +10,6 @@ which are saved to the accepted-answers DuckDB file.
 """
 
 from typing import List, Optional
-
 import duckdb
 import streamlit as st
 
