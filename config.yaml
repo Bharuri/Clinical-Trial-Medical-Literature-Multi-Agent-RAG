@@ -1,0 +1,46 @@
+# Configuration for Clinical Trial & Medical Literature Multi-Agent RAG
+# This is the single source of truth for paths and application settings.
+
+# PDF input directory (relative to project root or absolute)
+paths:
+  pdf_directory: "data/pdfs"
+  database_directory: "database"
+  duckdb_file: "database/medical_rag.duckdb"
+  accepted_answers_duckdb_file: "database/accepted_answers.duckdb"
+
+# Embedding model configuration
+# Using Sentence Transformers with 1,024-dimensional vectors (as required)
+embedding:
+  model_name: "BAAI/bge-large-en-v1.5"
+  dimensions: 1024
+
+# Chunking configuration for narrative text
+# Splits are recursive with overlap; do not cross table boundaries
+chunking:
+  chunk_size_tokens: 750  # Target middle of 500-1000 range
+  chunk_overlap_tokens: 150  # Target middle of 100-200 range
+  language: "english"
+
+# Retrieval configuration
+retrieval:
+  top_k: 10  # Number of top relevant chunks to retrieve
+  similarity_threshold: 0.0  # Allow all matches; filter by similarity in UI if needed
+
+# Default Bedrock model for the application
+# User can override this per request via Streamlit UI
+bedrock:
+  default_model_id: "us.amazon.nova-2-lite-v1:0"  # Amazon Nova 2 Lite (cross-region inference profile)
+  default_region: "us-east-1"
+  # Regions offered in the Streamlit sidebar. Confirm the chosen model is available in the region.
+  regions:
+    - "us-east-1"
+    - "us-west-2"
+    - "eu-central-1"
+    - "ap-northeast-1"
+
+# DuckDB vector search index configuration
+# Using HNSW index with cosine distance for fast approximate nearest neighbor search
+duckdb:
+  vss_extension: "vss"
+  index_type: "hnsw"
+  index_distance_metric: "cosine"
