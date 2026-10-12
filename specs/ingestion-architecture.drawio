@@ -1,0 +1,109 @@
+<mxfile host="app.diagrams.net" agent="Copilot" version="24.0.0" type="device">
+  <diagram id="ingestion-architecture" name="Ingestion Architecture">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="start" value="Start&#xa;python -m src.ingestion.run" style="ellipse;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="chk" value="PDF folder exists and&#xa;contains *.pdf files?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="250" y="25" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="stop" value="Log error and stop&#xa;(pipeline returns False)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="250" y="150" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="create" value="ChunkStorage.create_table()&#xa;DROP and CREATE medical_document_chunks" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="520" y="40" width="260" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="loop" value="For each PDF in sorted order (a failure logs the error, returns 0 chunks, and the next PDF continues)" style="rounded=0;whiteSpace=wrap;html=0;dashed=1;fillColor=none;strokeColor=#666666;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="220" width="980" height="400" as="geometry" />
+        </mxCell>
+
+        <mxCell id="extract" value="PDFExtractor.extract_pdf()&#xa;pdfplumber: narrative text, tables,&#xa;section header per page" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="loop">
+          <mxGeometry x="30" y="70" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="narr" value="TextChunker.chunk_narrative_text()&#xa;500-1000 tokens, 100-200 token overlap,&#xa;sentence-based" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="loop">
+          <mxGeometry x="330" y="70" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl" value="TextChunker.create_table_chunk()&#xa;one chunk per table (markdown)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="loop">
+          <mxGeometry x="630" y="70" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="collect" value="Collect all chunks for the PDF" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="loop">
+          <mxGeometry x="630" y="180" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="embed" value="EmbeddingGenerator.encode_texts()&#xa;BAAI/bge-base-en-v1.5, 768-dim,&#xa;L2 normalized" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="loop">
+          <mxGeometry x="330" y="180" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="valid" value="validate_embedding()&#xa;for each vector" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="loop">
+          <mxGeometry x="30" y="180" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="insert" value="ChunkStorage.insert_chunks_batch()&#xa;id, source_file, page_number, chunk_type,&#xa;section_header, content, embedding" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="loop">
+          <mxGeometry x="30" y="290" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="db" value="DuckDB table: medical_document_chunks&#xa;database/medical_rag.duckdb" style="shape=cylinder3;whiteSpace=wrap;html=0;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="loop">
+          <mxGeometry x="330" y="285" width="240" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="index" value="ChunkStorage.create_index()&#xa;HNSW index on embedding column" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="330" y="660" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="verify" value="get_chunk_count()&#xa;verify at least one chunk stored" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="630" y="660" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="done" value="Done" style="ellipse;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="940" y="660" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="note" value="Notes&#xa;- Config (config.yaml): chunk size and overlap, embedding model, PDF directory, DuckDB path&#xa;- Table is rebuilt on each run; the questions and accepted_answers stores are not touched&#xa;- Embeddings are generated per PDF, then stored in batch" style="shape=note;whiteSpace=wrap;html=0;size=14;fillColor=#f5f5f5;strokeColor=#666666;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="220" width="260" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="start" target="chk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="chk" target="stop">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="chk" target="create">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="create" target="loop">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="loop" source="extract" target="narr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="per page" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="loop" source="narr" target="tbl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="loop" source="tbl" target="collect">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="loop" source="collect" target="embed">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="loop" source="embed" target="valid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="loop" source="valid" target="insert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="loop" source="insert" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="after all PDFs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="db" target="index">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="index" target="verify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="verify" target="done">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

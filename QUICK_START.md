@@ -20,6 +20,7 @@ This task established the foundation for the Clinical Trial & Medical Literature
    - Database: `database/medical_rag.duckdb`
    - Accepted answers: `database/accepted_answers.duckdb` (separate file, written only when a user clicks "Accept this answer")
    - The app's **Chunk Table** tab browses `medical_document_chunks` read-only, with content and source filters (embeddings are not shown)
+   - The app's **Architecture** tab, after Chunk Table, opens with a high-level full-application diagram (`specs/application-architecture.drawio`), then shows the three draw.io diagrams in `specs/` (ingestion, retrieval, synthesis and fact-check loop) as rendered pictures, with a download button for each `.drawio` file. Scroll inside a diagram to see its full width. Open the downloaded files in draw.io (diagrams.net) or the VS Code draw.io extension to edit them
    - A separate **Questions** tab, placed after Ask & Verify, holds a form to add questions and a table of stored questions, newest first. Questions are saved to a `questions` table in `medical_rag.duckdb`
    - Saved-answer lookup: before the pipeline runs, the question is checked against accepted answers. An exact match (ignoring case, extra spaces, and trailing punctuation) shows the saved answer. A question with cosine similarity of at least 0.8 to a saved question asks "Is this the same as your question?" Yes shows the saved answer; No runs the pipeline. Anything else goes to the LLM
    - Embeddings: 768-dimensional Sentence Transformers

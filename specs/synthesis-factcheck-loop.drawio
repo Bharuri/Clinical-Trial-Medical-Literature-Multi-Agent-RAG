@@ -1,0 +1,124 @@
+<mxfile host="65bd71144e">
+    <diagram id="synthesis-factcheck-loop" name="Synthesis and Fact-Check Loop">
+        <mxGraphModel dx="1800" dy="1600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1520" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="start" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="Retrieved chunks&#xa;from retrieval step" vertex="1">
+                    <mxGeometry height="60" width="300" x="400" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="d0" parent="1" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="No chunks retrieved?" vertex="1">
+                    <mxGeometry height="90" width="300" x="400" y="115" as="geometry"/>
+                </mxCell>
+                <mxCell id="noans" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#f8cecc;strokeColor=#b85450;" value="Skip synthesis&#xa;no draft, no answer" vertex="1">
+                    <mxGeometry height="60" width="240" x="900" y="125" as="geometry"/>
+                </mxCell>
+                <mxCell id="draft0" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="SynthesisAgent.draft()&#xa;LLM call 1: system prompt, numbered sources, question&#xa;then canonicalize_citations()" vertex="1">
+                    <mxGeometry height="80" width="300" x="400" y="235" as="geometry"/>
+                </mxCell>
+                <mxCell id="check" parent="1" style="rounded=0;whiteSpace=wrap;html=0;dashed=1;fillColor=none;strokeColor=#666666;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontStyle=1;" value="FactChecker.check(draft, chunks)&#xa;runs on every draft: rule checks first, then the LLM check" vertex="1">
+                    <mxGeometry height="700" width="620" x="240" y="370" as="geometry"/>
+                </mxCell>
+                <mxCell id="rules" parent="check" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Rule checks (deterministic)&#xa;split blocks, skip headings and tables&#xa;classify uncited blocks, check citation pages, check numbers" vertex="1">
+                    <mxGeometry height="70" width="300" x="60" y="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="cov" parent="check" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="Citation coverage &gt;= 90%&#xa;of factual blocks?" vertex="1">
+                    <mxGeometry height="90" width="300" x="60" y="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="uncited" parent="check" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f8cecc;strokeColor=#b85450;" value="Each uncited block&#xa;becomes an issue" vertex="1">
+                    <mxGeometry height="70" width="170" x="420" y="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="issues" parent="check" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Rule issues list&#xa;(may be empty)" vertex="1">
+                    <mxGeometry height="60" width="300" x="60" y="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="llm" parent="check" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="LLM support check, always runs&#xa;Bedrock call 2, 4 or 6: returns JSON verdict" vertex="1">
+                    <mxGeometry height="70" width="300" x="60" y="360" as="geometry"/>
+                </mxCell>
+                <mxCell id="parse" parent="check" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="Valid JSON with&#xa;is_approved?" vertex="1">
+                    <mxGeometry height="90" width="300" x="60" y="460" as="geometry"/>
+                </mxCell>
+                <mxCell id="unparsed" parent="check" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f8cecc;strokeColor=#b85450;" value="LLM verdict not approved&#xa;critique: could not be parsed" vertex="1">
+                    <mxGeometry height="60" width="170" x="420" y="475" as="geometry"/>
+                </mxCell>
+                <mxCell id="combine" parent="check" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="approved = no rule issues AND LLM approved&#xa;critique = rule issues + LLM critique" vertex="1">
+                    <mxGeometry height="80" width="300" x="60" y="580" as="geometry"/>
+                </mxCell>
+                <mxCell id="c1" edge="1" parent="check" source="rules" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="cov" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c2" edge="1" parent="check" source="cov" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="issues" value="90% or more">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c3" edge="1" parent="check" source="cov" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="uncited" value="below 90%">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c4" edge="1" parent="check" source="uncited" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="issues" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c5" edge="1" parent="check" source="issues" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="llm" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c6" edge="1" parent="check" source="llm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="parse" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c7" edge="1" parent="check" source="parse" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="combine" value="yes">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c8" edge="1" parent="check" source="parse" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="unparsed" value="no">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="c9" edge="1" parent="check" source="unparsed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="combine" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="d1" parent="1" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="Draft approved?" vertex="1">
+                    <mxGeometry height="90" width="300" x="400" y="1110" as="geometry"/>
+                </mxCell>
+                <mxCell id="final" parent="1" style="ellipse;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="final_answer = draft&#xa;shown as the answer" vertex="1">
+                    <mxGeometry height="60" width="240" x="900" y="1125" as="geometry"/>
+                </mxCell>
+                <mxCell id="d2" parent="1" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="Revisions &lt; max_revisions (2)?" vertex="1">
+                    <mxGeometry height="90" width="300" x="400" y="1230" as="geometry"/>
+                </mxCell>
+                <mxCell id="fail" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#f8cecc;strokeColor=#b85450;" value="final_answer = None&#xa;all drafts shown in tabs" vertex="1">
+                    <mxGeometry height="70" width="240" x="900" y="1245" as="geometry"/>
+                </mxCell>
+                <mxCell id="rev" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="SynthesisAgent.revise()&#xa;Bedrock call 3 or 5: question, sources, previous draft, critique&#xa;then canonicalize_citations()" vertex="1">
+                    <mxGeometry height="90" width="300" x="400" y="1360" as="geometry"/>
+                </mxCell>
+                <mxCell id="notes" parent="1" style="shape=note;whiteSpace=wrap;html=0;size=14;fillColor=#f5f5f5;strokeColor=#666666;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" value="Notes&#xa;- Bedrock calls: at most 6 (draft, check, revise, check, revise, check)&#xa;- Max revisions: max_revisions = 2 (run.py)&#xa;- Coverage threshold: 90% (fact_check.py)&#xa;- Uncited blocks skipped: list lead-ins ending with a colon, not-found statements,&#xa;  signposts, restatements of cited text&#xa;- Numbers must appear on the cited page; a number found elsewhere is a mismatch&#xa;- Every draft and check is stored as a DraftAttempt; the UI shows each in its own tab" vertex="1">
+                    <mxGeometry height="250" width="420" x="900" y="380" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" edge="1" parent="1" source="start" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="d0" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" edge="1" parent="1" source="d0" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="noans" value="yes">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" edge="1" parent="1" source="d0" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="draft0" value="no">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" edge="1" parent="1" source="draft0" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="check" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" edge="1" parent="1" source="check" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="d1" value="">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6" edge="1" parent="1" source="d1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="final" value="yes">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" edge="1" parent="1" source="d1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="d2" value="no">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e8" edge="1" parent="1" source="d2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="fail" value="no">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e9" edge="1" parent="1" source="d2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" target="rev" value="yes">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e10" edge="1" parent="1" source="rev" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="check" value="loop: check the revised draft">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

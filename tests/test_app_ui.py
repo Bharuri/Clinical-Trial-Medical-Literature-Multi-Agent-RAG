@@ -12,6 +12,7 @@ import pytest
 from streamlit.proto.TextInput_pb2 import TextInput as TextInputProto
 from streamlit.testing.v1 import AppTest
 
+from src.app.architecture import DIAGRAMS
 from src.retrieval_agent.answer_cache import CachedAnswer
 from src.retrieval_agent.bedrock_client import BedrockError
 from src.retrieval_agent.fact_check import FactCheckResult
@@ -458,6 +459,23 @@ def test_chunk_table_empty_database_message():
 
     assert not at.exception
     assert any("The chunk table is empty or missing." in i.value for i in at.info)
+
+
+def test_architecture_tab_follows_chunk_table_and_offers_all_diagrams():
+    with patch(CHUNK_SOURCES_TARGET, return_value=[]), patch(CHUNK_LOAD_TARGET, return_value=([], 0)):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+
+    labels = [t.label for t in at.tabs]
+    assert labels[-2:] == ["Chunk Table", "Architecture"]
+    assert not at.exception
+    assert any(s.value == "Architecture" for s in at.subheader)
+    rendered = " ".join(m.value for m in at.markdown)
+    for diagram in DIAGRAMS:
+        assert f"**{diagram.title}**" in rendered
+    assert rendered.index(f"**{DIAGRAMS[0].title}**") == min(
+        rendered.index(f"**{d.title}**") for d in DIAGRAMS
+    )
 
 
 def test_chunk_table_keyword_filter_passes_keyword_to_loader():

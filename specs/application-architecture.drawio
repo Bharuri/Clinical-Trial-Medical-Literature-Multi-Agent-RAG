@@ -1,0 +1,119 @@
+<mxfile host="app.diagrams.net" agent="Copilot" version="24.0.0" type="device">
+  <diagram id="application-architecture" name="Application Architecture">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="legend" value="Legend&#xa;Blue: UI and pipeline steps&#xa;Yellow: DuckDB databases&#xa;Purple: local models&#xa;Orange: AWS Bedrock&#xa;Green: user and results&#xa;Dashed boxes: groups" style="shape=note;whiteSpace=wrap;html=0;size=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="220" height="190" as="geometry" />
+        </mxCell>
+
+        <mxCell id="user" value="User&#xa;(browser)" style="ellipse;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="220" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="app" value="Streamlit app (src/app/app.py)" style="rounded=0;whiteSpace=wrap;html=0;dashed=1;fillColor=none;strokeColor=#666666;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="330" y="40" width="330" height="520" as="geometry" />
+        </mxCell>
+        <mxCell id="tab-ask" value="Ask &amp; Verify&#xa;question, document filter,&#xa;re-ranker toggle" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="app">
+          <mxGeometry x="30" y="50" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="tab-questions" value="Questions&#xa;add and list saved questions" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="app">
+          <mxGeometry x="30" y="135" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="tab-accepted" value="Accepted Answers&#xa;list and search saved answers" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="app">
+          <mxGeometry x="30" y="220" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="tab-chunks" value="Chunk Table&#xa;browse medical_document_chunks" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="app">
+          <mxGeometry x="30" y="305" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="tab-architecture" value="Architecture&#xa;these diagrams, rendered" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="app">
+          <mxGeometry x="30" y="390" width="270" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="qa" value="Question answering (Ask &amp; Verify tab)" style="rounded=0;whiteSpace=wrap;html=0;dashed=1;fillColor=none;strokeColor=#666666;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="720" y="40" width="470" height="650" as="geometry" />
+        </mxCell>
+        <mxCell id="lookup" value="Accepted-answer lookup&#xa;exact normalized match, then&#xa;cosine &gt;= 0.8 (bge embeddings)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="qa">
+          <mxGeometry x="40" y="50" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dec" value="Saved answer found&#xa;and confirmed?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="qa">
+          <mxGeometry x="40" y="160" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="show" value="Show saved answer&#xa;no LLM call" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="qa">
+          <mxGeometry x="340" y="170" width="110" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="retr" value="Hybrid retrieval&#xa;semantic 75% + BM25 25%&#xa;reads medical_rag.duckdb;&#xa;optional re-ranker" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="qa">
+          <mxGeometry x="40" y="300" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="synth" value="Synthesis and fact-check loop&#xa;SynthesisAgent.draft, FactChecker.check,&#xa;up to 2 revisions" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="qa">
+          <mxGeometry x="40" y="420" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="answer" value="Answer shown with draft attempts&#xa;Accept saves it to accepted answers" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="qa">
+          <mxGeometry x="40" y="550" width="260" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="accdb" value="accepted_answers.duckdb&#xa;saved questions and answers" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="90" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="emb" value="Embedding model&#xa;BAAI/bge-base-en-v1.5, 768-dim" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="190" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="bedrock" value="Amazon Bedrock&#xa;Nova 2 Lite, credentials from sidebar" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="460" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="reranker" value="Re-ranker (optional)&#xa;BAAI/bge-reranker-base" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="580" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="offline" value="Offline: ingestion (src/ingestion/run.py, run before querying)" style="rounded=0;whiteSpace=wrap;html=0;dashed=1;fillColor=none;strokeColor=#666666;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="740" width="1400" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="pdf" value="PDF library&#xa;data/pdfs/*.pdf" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="offline">
+          <mxGeometry x="40" y="70" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ingest" value="Ingestion pipeline&#xa;extract, chunk, embed, store&#xa;(see Ingestion diagram)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="offline">
+          <mxGeometry x="360" y="60" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ragdb" value="medical_rag.duckdb&#xa;medical_document_chunks (HNSW)&#xa;questions table" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="offline">
+          <mxGeometry x="1190" y="60" width="200" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-user" value="question" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=0;" edge="1" parent="1" source="user" target="tab-ask">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ask" value="question" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=0;" edge="1" parent="1" source="tab-ask" target="lookup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-lookup-dec" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=0;" edge="1" parent="1" source="lookup" target="dec">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-yes" value="yes" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=0;" edge="1" parent="1" source="dec" target="show">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-no" value="no" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=0;" edge="1" parent="1" source="dec" target="retr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-retr-synth" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=0;" edge="1" parent="1" source="retr" target="synth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-synth-answer" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=0;" edge="1" parent="1" source="synth" target="answer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-llm" value="LLM calls (at most 6)" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=0;" edge="1" parent="1" source="synth" target="bedrock">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-lookup-acc" value="read saved answers" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=0;" edge="1" parent="1" source="lookup" target="accdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-pdf" value="PDFs" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=0;" edge="1" parent="1" source="pdf" target="ingest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ingest" value="write chunks" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;html=0;" edge="1" parent="1" source="ingest" target="ragdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

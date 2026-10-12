@@ -1,0 +1,147 @@
+<mxfile host="app.diagrams.net" agent="Copilot" version="24.0.0" type="device">
+  <diagram id="retrieval-architecture" name="Retrieval Architecture">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="start" value="User question&#xa;Ask &amp; Verify tab, with document filter&#xa;and re-ranker checkbox" style="ellipse;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="lookup" value="find_accepted_answer()&#xa;load accepted_answers.duckdb" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="300" y="40" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dec1" value="Exact normalized match&#xa;in saved answers?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="560" y="25" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="showExact" value="Show saved answer&#xa;(exact match, no LLM)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="860" y="35" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dec2" value="Cosine &gt;= 0.8 to a saved question?&#xa;(skipped if no saved answers)" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="560" y="160" width="240" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dec3" value="User confirms:&#xa;same question?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="860" y="170" width="240" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="showSimilar" value="Show saved answer&#xa;(similar match, user confirmed)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="175" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="pipeline" value="run_pipeline()&#xa;Bedrock client, then retrieval" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="560" y="310" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="route" value="route_query()&#xa;text, table, or both (from question wording)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="560" y="400" width="240" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hybrid" value="Hybrid retrieval: HybridRetriever.retrieve()&#xa;Document filter applies to both legs. Pool size: 10 without re-ranker, 200 with it." style="rounded=0;whiteSpace=wrap;html=0;dashed=1;fillColor=none;strokeColor=#666666;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="470" width="1200" height="500" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sem" value="Semantic search: Retriever.retrieve()&#xa;embed question (bge-base-en-v1.5, 768-dim)&#xa;cosine via array_cosine_distance, top pool" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="hybrid">
+          <mxGeometry x="30" y="60" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="bm" value="Keyword search (BM25): HybridRetriever._keyword_ranking()&#xa;tokenize question, score all eligible chunks&#xa;(k1 = 1.5, b = 0.75), top pool" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="hybrid">
+          <mxGeometry x="30" y="230" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="merge" value="Merge candidates&#xa;union of semantic and BM25 chunk ids" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="hybrid">
+          <mxGeometry x="370" y="100" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="cosmiss" value="Cosine for BM25-only chunks&#xa;_cosine_scores() SQL lookup" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="hybrid">
+          <mxGeometry x="370" y="230" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="fusion" value="score_fusion()&#xa;0.75 x cosine + 0.25 x (BM25 / max BM25)&#xa;sort, keep top pool" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="hybrid">
+          <mxGeometry x="700" y="100" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="dec4" value="use_reranker?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="hybrid">
+          <mxGeometry x="700" y="230" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="rerank" value="CrossEncoderReranker.rerank()&#xa;score 200 (question, chunk) pairs (bge-reranker-base)&#xa;keep best 10" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="hybrid">
+          <mxGeometry x="700" y="380" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="keep" value="Keep top_k (10)&#xa;of fused list" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="hybrid">
+          <mxGeometry x="1010" y="230" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="result" value="RetrievalResult&#xa;chunks, route, query_dimensions" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="hybrid">
+          <mxGeometry x="1010" y="380" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="synth" value="SynthesisAgent.draft() and FactChecker.check()&#xa;revise up to 2 times if not approved" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1010" width="300" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="answer" value="Answer shown in Ask &amp; Verify&#xa;final_answer if approved, else draft tabs" style="ellipse;whiteSpace=wrap;html=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1120" width="300" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="notes" value="Notes&#xa;- config.yaml: retrieval.top_k (10), reranker.candidate_pool (200), reranker.top_k (10)&#xa;- hybrid.py: semantic weight 0.75, BM25 weight 0.25, BM25 k1 1.5, b 0.75&#xa;- answer_cache.py: similarity threshold 0.8 for a saved question&#xa;- Saved-answer lookup runs in the Streamlit app only. The CLI (python -m src.retrieval_agent.run) goes straight to run_pipeline().&#xa;- Exact matches skip the embedding model. Saved answers are in database/accepted_answers.duckdb." style="shape=note;whiteSpace=wrap;html=0;size=14;fillColor=#f5f5f5;strokeColor=#666666;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="300" width="340" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="start" target="lookup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="lookup" target="dec1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dec1" target="showExact">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dec1" target="dec2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dec2" target="dec3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dec2" target="pipeline">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dec3" target="showSimilar">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="dec3" target="pipeline">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="pipeline" target="route">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="route filter (chunk types)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="route" target="hybrid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e11" value="semantic ids" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="hybrid" source="sem" target="merge">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="BM25 ids" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="hybrid" source="bm" target="cosmiss">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="if any BM25-only ids" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="hybrid" source="cosmiss" target="merge">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="hybrid" source="merge" target="fusion">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="hybrid" source="fusion" target="dec4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="hybrid" source="dec4" target="rerank">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="hybrid" source="dec4" target="keep">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="hybrid" source="rerank" target="result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="hybrid" source="keep" target="result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e20" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="result" target="synth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="synth" target="answer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -14,13 +14,16 @@ from pathlib import Path
 from typing import List, Optional
 import duckdb
 import streamlit as st
+import streamlit.components.v1 as components
 
 _ROOT = str(Path(__file__).resolve().parents[2])
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from src.app.accepted_answers import load_accepted_answers, save_accepted_answer
+from src.app.architecture import DIAGRAMS, read_diagram
 from src.app.chunk_browser import list_chunk_sources, load_chunks
+from src.app.diagram_render import drawio_to_html
 from src.app.questions import load_questions, save_question
 from src.app.service import answer_question, find_accepted_answer
 from src.ingestion.embeddings import EmbeddingError
@@ -385,6 +388,28 @@ def render_chunk_table() -> None:
     st.dataframe(rows, hide_index=True, use_container_width=True)
 
 
+def render_architecture() -> None:
+    """Show each draw.io architecture diagram from the specs folder, with a download button."""
+    st.subheader("Architecture")
+    st.caption("Scroll inside each diagram to see all of it. Download the .drawio file to edit it in draw.io.")
+    for diagram in DIAGRAMS:
+        st.markdown(f"**{diagram.title}**")
+        st.write(diagram.description)
+        xml = read_diagram(diagram)
+        if xml is None:
+            st.warning(f"Diagram file not found: specs/{diagram.filename}")
+            continue
+        page, height = drawio_to_html(xml)
+        components.html(page, height=height, scrolling=True)
+        st.download_button(
+            f"Download {diagram.filename}",
+            data=xml.encode("utf-8"),
+            file_name=diagram.filename,
+            mime="application/xml",
+            key=f"download_{diagram.filename}",
+        )
+
+
 def render_questions() -> None:
     """Form to add a question to the questions table, and the table of stored questions."""
     st.subheader("Questions")
@@ -494,8 +519,8 @@ def main() -> None:
 
     render_sidebar(config)
 
-    pipeline_tab, questions_tab, accepted_tab, chunks_tab = st.tabs(
-        ["Ask & Verify", "Questions", "Accepted Answers", "Chunk Table"]
+    pipeline_tab, questions_tab, accepted_tab, chunks_tab, architecture_tab = st.tabs(
+        ["Ask & Verify", "Questions", "Accepted Answers", "Chunk Table", "Architecture"]
     )
     with pipeline_tab:
         render_document_selector()
@@ -522,6 +547,8 @@ def main() -> None:
         render_accepted_answers()
     with chunks_tab:
         render_chunk_table()
+    with architecture_tab:
+        render_architecture()
 
 
 main()
