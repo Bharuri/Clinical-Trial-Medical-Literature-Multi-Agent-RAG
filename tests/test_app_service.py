@@ -53,7 +53,7 @@ class FakeRetriever:
     def __init__(self):
         self.closed = False
 
-    def retrieve(self, question: str, top_k=None) -> RetrievalResult:
+    def retrieve(self, question: str, top_k=None, source_files=None, use_reranker=False) -> RetrievalResult:
         return RetrievalResult(question=question, route="text", query_dimensions=768, chunks=[CHUNK])
 
     def close(self) -> None:
@@ -90,28 +90,33 @@ class TestAnswerQuestion:
     def test_owned_retriever_is_built_with_cached_encoder_and_closed(self):
         encoder = object()
         retriever_cls = MagicMock()
+        hybrid_cls = MagicMock()
         sentinel = PipelineResult(question="q")
         with patch.object(service, "get_query_encoder", return_value=encoder), \
                 patch.object(service, "Retriever", retriever_cls), \
+                patch.object(service, "HybridRetriever", hybrid_cls), \
                 patch.object(service, "run_pipeline", return_value=sentinel) as run:
             result = service.answer_question("q", **CREDS)
 
         retriever_cls.assert_called_once_with(encoder=encoder)
-        built = retriever_cls.return_value
+        hybrid_cls.assert_called_once()
+        assert hybrid_cls.call_args.kwargs["reranker_factory"] is service.get_reranker
+        built = hybrid_cls.return_value
         built.close.assert_called_once()
         assert run.call_args.kwargs["retriever"] is built
         assert run.call_args.kwargs["llm"] is not None
         assert result is sentinel
 
     def test_owned_retriever_closed_even_when_pipeline_fails(self):
-        retriever_cls = MagicMock()
+        hybrid_cls = MagicMock()
         with patch.object(service, "get_query_encoder", return_value=object()), \
-                patch.object(service, "Retriever", retriever_cls), \
+                patch.object(service, "Retriever", MagicMock()), \
+                patch.object(service, "HybridRetriever", hybrid_cls), \
                 patch.object(service, "run_pipeline", side_effect=RuntimeError("boom")):
             with pytest.raises(RuntimeError, match="boom"):
                 service.answer_question("q", **CREDS)
 
-        retriever_cls.return_value.close.assert_called_once()
+        hybrid_cls.return_value.close.assert_called_once()
 
     def test_injected_retriever_and_llm_are_not_closed(self):
         retriever = MagicMock()
@@ -121,6 +126,32 @@ class TestAnswerQuestion:
 
         retriever.close.assert_not_called()
         assert run.call_args.kwargs["llm"] is llm
+
+    def test_selected_source_files_are_passed_to_pipeline(self):
+        with patch.object(service, "run_pipeline", return_value=PipelineResult(question="q")) as run:
+            service.answer_question("q", llm=object(), retriever=MagicMock(), source_files=["a.pdf"], **CREDS)
+
+        assert run.call_args.kwargs["source_files"] == ["a.pdf"]
+
+    def test_reranker_flag_is_passed_to_pipeline(self):
+        with patch.object(service, "run_pipeline", return_value=PipelineResult(question="q")) as run:
+            service.answer_question("q", llm=object(), retriever=MagicMock(), use_reranker=True, **CREDS)
+
+        assert run.call_args.kwargs["use_reranker"] is True
+
+    def test_reranker_is_off_by_default(self):
+        with patch.object(service, "run_pipeline", return_value=PipelineResult(question="q")) as run:
+            service.answer_question("q", llm=object(), retriever=MagicMock(), **CREDS)
+
+        assert run.call_args.kwargs["use_reranker"] is False
+
+    def test_empty_source_selection_rejected_before_any_loading(self):
+        encoder_factory = MagicMock()
+        with patch.object(service, "get_query_encoder", encoder_factory):
+            with pytest.raises(ValueError, match="at least one document"):
+                service.answer_question("q", source_files=[], **CREDS)
+
+        encoder_factory.assert_not_called()
 
     def test_end_to_end_approved_answer_with_fakes(self):
         result = service.answer_question(

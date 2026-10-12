@@ -7,7 +7,7 @@ so query and chunk vectors come from the same model.
 
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional, Protocol
+from typing import List, Optional, Protocol, Sequence
 
 import numpy as np
 
@@ -142,13 +142,21 @@ class Retriever:
         except Exception as e:
             raise RetrievalError(f"Failed to connect to DuckDB: {e}") from e
 
-    def retrieve(self, question: str, top_k: Optional[int] = None) -> RetrievalResult:
+    def retrieve(
+        self,
+        question: str,
+        top_k: Optional[int] = None,
+        source_files: Optional[Sequence[str]] = None,
+    ) -> RetrievalResult:
         """
         Route the question, embed it, and return the top-k matching chunks.
 
+        Args:
+            source_files: Only search chunks from these source files. None searches all files.
+
         Raises:
-            RetrievalError: If the question is empty, the embedding has the
-                wrong dimension, or the search fails.
+            RetrievalError: If the question is empty, source_files is an empty list,
+                the embedding has the wrong dimension, or the search fails.
         """
         if not question or not question.strip():
             raise RetrievalError("Question must not be empty")
@@ -157,9 +165,12 @@ class Retriever:
         if k < 1:
             raise RetrievalError(f"top_k must be >= 1, got {k}")
 
+        if source_files is not None and len(source_files) == 0:
+            raise RetrievalError("At least one source file must be selected")
+
         route = route_query(question)
         query_vector = self._embed(question)
-        chunks = self._search(query_vector, route, k)
+        chunks = self._search(query_vector, route, k, source_files)
         return RetrievalResult(
             question=question,
             route=route,
@@ -179,14 +190,25 @@ class Retriever:
             )
         return vector
 
-    def _search(self, query_vector: np.ndarray, route: str, k: int) -> List[RetrievedChunk]:
-        chunk_types = _ROUTE_CHUNK_TYPES[route]
+    def _search(
+        self,
+        query_vector: np.ndarray,
+        route: str,
+        k: int,
+        source_files: Optional[Sequence[str]] = None,
+    ) -> List[RetrievedChunk]:
+        conditions: List[str] = []
         params: list = [query_vector.tolist()]
-        where_clause = ""
+
+        chunk_types = _ROUTE_CHUNK_TYPES[route]
         if chunk_types:
-            placeholders = ", ".join("?" for _ in chunk_types)
-            where_clause = f"WHERE chunk_type IN ({placeholders})"
+            conditions.append(f"chunk_type IN ({', '.join('?' for _ in chunk_types)})")
             params.extend(chunk_types)
+        if source_files is not None:
+            conditions.append(f"source_file IN ({', '.join('?' for _ in source_files)})")
+            params.extend(source_files)
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
         params.append(k)
 
         sql = f"""

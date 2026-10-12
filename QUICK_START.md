@@ -20,9 +20,11 @@ This task established the foundation for the Clinical Trial & Medical Literature
    - Database: `database/medical_rag.duckdb`
    - Accepted answers: `database/accepted_answers.duckdb` (separate file, written only when a user clicks "Accept this answer")
    - The app's **Chunk Table** tab browses `medical_document_chunks` read-only, with content and source filters (embeddings are not shown)
+   - A separate **Questions** tab, placed after Ask & Verify, holds a form to add questions and a table of stored questions, newest first. Questions are saved to a `questions` table in `medical_rag.duckdb`
+   - Saved-answer lookup: before the pipeline runs, the question is checked against accepted answers. An exact match (ignoring case, extra spaces, and trailing punctuation) shows the saved answer. A question with cosine similarity of at least 0.8 to a saved question asks "Is this the same as your question?" Yes shows the saved answer; No runs the pipeline. Anything else goes to the LLM
    - Embeddings: 768-dimensional Sentence Transformers
    - Chunking: 500-1000 tokens with 100-200 token overlap
-   - Retrieval: Top-10 results
+   - Retrieval: hybrid search (BM25 keyword + vector similarity, combined by weighted score fusion: vector 0.75, normalized BM25 0.25) returning Top-10 results; an optional cross-encoder re-ranker checks 200 candidates and keeps the best 10
    - Bedrock: Nova 2 Lite (`us.amazon.nova-2-lite-v1:0`, default, user-configurable)
 
 3. **Dependencies** — `requirements.txt` with 24 packages ready to install

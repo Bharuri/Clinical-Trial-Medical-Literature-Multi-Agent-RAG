@@ -23,8 +23,14 @@ chunking:
 
 # Retrieval configuration
 retrieval:
-  top_k: 10  # Number of top relevant chunks to retrieve
+  top_k: 10  # Number of top relevant chunks to retrieve (hybrid search, re-ranker off)
   similarity_threshold: 0.0  # Allow all matches; filter by similarity in UI if needed
+
+# Optional cross-encoder re-ranker, enabled per request in the UI or with --rerank in the CLI
+reranker:
+  model_name: "BAAI/bge-reranker-base"
+  candidate_pool: 200  # Chunks gathered from hybrid search before re-ranking
+  top_k: 10  # Best chunks kept after re-ranking
 
 # Default Bedrock model for the application
 # User can override this per request via Streamlit UI

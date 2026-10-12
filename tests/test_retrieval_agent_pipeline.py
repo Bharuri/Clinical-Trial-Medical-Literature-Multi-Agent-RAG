@@ -53,7 +53,7 @@ class FakeRetriever:
         self.chunks = [CHUNK] if chunks is None else chunks
         self.calls: List[str] = []
 
-    def retrieve(self, question: str, top_k=None) -> RetrievalResult:
+    def retrieve(self, question: str, top_k=None, source_files=None, use_reranker=False) -> RetrievalResult:
         self.calls.append(question)
         return RetrievalResult(
             question=question,
@@ -181,7 +181,7 @@ class TestFailFast:
 
     def test_retrieval_error_propagates(self):
         class BrokenRetriever(FakeRetriever):
-            def retrieve(self, question, top_k=None):
+            def retrieve(self, question, top_k=None, source_files=None, use_reranker=False):
                 raise RetrievalError("boom")
 
         with pytest.raises(RetrievalError, match="boom"):
@@ -190,7 +190,7 @@ class TestFailFast:
 
 class TestCli:
     def test_retrieve_only_prints_chunks_and_returns_zero(self, capsys):
-        with patch.object(run_module, "Retriever") as retriever_cls:
+        with patch.object(run_module, "Retriever"), patch.object(run_module, "HybridRetriever") as retriever_cls:
             retriever_cls.return_value = FakeRetriever()
             exit_code = main(["What was the hazard ratio?", "--retrieve-only"])
 
@@ -203,7 +203,7 @@ class TestCli:
     def test_full_mode_without_credentials_returns_two(self, monkeypatch, capsys):
         monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
         monkeypatch.delenv("AWS_SECRET_ACCESS_KEY", raising=False)
-        with patch.object(run_module, "Retriever") as retriever_cls:
+        with patch.object(run_module, "Retriever"), patch.object(run_module, "HybridRetriever") as retriever_cls:
             retriever_cls.return_value = FakeRetriever()
             exit_code = main(["What was the hazard ratio?"])
 
@@ -215,12 +215,12 @@ class TestCli:
         monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "secret")
         llm = ScriptedLLM([GOOD_DRAFT])
         with patch.object(run_module.BedrockLLM, "from_credentials", return_value=llm), \
-                patch.object(run_module, "Retriever") as retriever_cls:
+                patch.object(run_module, "Retriever"), patch.object(run_module, "HybridRetriever") as retriever_cls:
             retriever_cls.return_value = FakeRetriever()
             assert main(["What was the hazard ratio?"]) == 0
 
         llm_bad = ScriptedLLM([BAD_DRAFT])
         with patch.object(run_module.BedrockLLM, "from_credentials", return_value=llm_bad), \
-                patch.object(run_module, "Retriever") as retriever_cls:
+                patch.object(run_module, "Retriever"), patch.object(run_module, "HybridRetriever") as retriever_cls:
             retriever_cls.return_value = FakeRetriever()
             assert main(["What was the response rate?", "--max-revisions", "0"]) == 1

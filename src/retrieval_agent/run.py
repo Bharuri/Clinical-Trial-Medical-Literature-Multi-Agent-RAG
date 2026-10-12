@@ -3,6 +3,7 @@ Retrieval and agent pipeline: retrieve, draft, fact-check, and revise.
 
 Usage:
     python -m src.retrieval_agent.run "question" --retrieve-only
+    python -m src.retrieval_agent.run "question" --retrieve-only --rerank   (re-ranks 200 candidates, keeps 10)
     python -m src.retrieval_agent.run "question"   (needs AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY)
 
 Full mode reads AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION and
@@ -13,10 +14,10 @@ import argparse
 import os
 import sys
 from dataclasses import dataclass, field
-from typing import List, Optional
-
+from typing import List, Optional, Sequence
 from src.retrieval_agent.bedrock_client import BedrockError, BedrockLLM, TextModel
 from src.retrieval_agent.fact_check import FactCheckResult, FactChecker
+from src.retrieval_agent.hybrid import HybridRetriever
 from src.retrieval_agent.retrieval import RetrievalError, RetrievalResult, Retriever
 from src.retrieval_agent.synthesis import SynthesisAgent
 
@@ -55,8 +56,10 @@ def run_pipeline(
     aws_region_name: Optional[str] = None,
     model_id: Optional[str] = None,
     llm: Optional[TextModel] = None,
-    retriever: Optional[Retriever] = None,
+    retriever: Optional[HybridRetriever] = None,
     top_k: Optional[int] = None,
+    source_files: Optional[Sequence[str]] = None,
+    use_reranker: bool = False,
     max_revisions: int = 2,
 ) -> PipelineResult:
     """
@@ -64,6 +67,8 @@ def run_pipeline(
 
     The Bedrock client is created before retrieval so missing credentials fail fast.
     A draft is returned as final only if the fact-checker approves it.
+    source_files limits retrieval to those documents. None searches all of them.
+    use_reranker re-ranks hybrid-search candidates with the cross-encoder.
 
     Raises:
         ValueError: If max_revisions is negative.
@@ -82,13 +87,19 @@ def run_pipeline(
 
     owns_retriever = retriever is None
     if owns_retriever:
-        retriever = Retriever(top_k=top_k)
+        retriever = HybridRetriever(Retriever(top_k=top_k))
     try:
-        retrieval = retriever.retrieve(question, top_k=top_k)
+        retrieval = retriever.retrieve(
+            question, top_k=top_k, source_files=source_files, use_reranker=use_reranker
+        )
     finally:
         if owns_retriever:
             retriever.close()
-    logs.append(f"Retrieved {retrieval.match_count} chunk(s) via route '{retrieval.route}'")
+    reranker_note = "re-ranker on" if use_reranker else "re-ranker off"
+    logs.append(
+        f"Retrieved {retrieval.match_count} chunk(s) via route '{retrieval.route}' "
+        f"(hybrid search, {reranker_note})"
+    )
 
     result = PipelineResult(question=question, retrieval=retrieval, logs=logs)
     if not retrieval.chunks:
@@ -149,7 +160,12 @@ def _print_result(result: PipelineResult) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Ask a question against the clinical trial index.")
     parser.add_argument("question", help="Question to answer")
-    parser.add_argument("--top-k", type=int, default=None, help="Number of chunks to retrieve")
+    parser.add_argument("--top-k", type=int, default=None, help="Number of chunks to retrieve (ignored with --rerank)")
+    parser.add_argument(
+        "--rerank",
+        action="store_true",
+        help="Re-rank 200 hybrid-search candidates with a cross-encoder and keep the best 10",
+    )
     parser.add_argument("--max-revisions", type=int, default=2, help="Maximum revision rounds after a failed fact-check")
     parser.add_argument("--retrieve-only", action="store_true", help="Show retrieved chunks without calling Bedrock")
     return parser
@@ -160,9 +176,11 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     try:
         if args.retrieve_only:
-            retriever = Retriever(top_k=args.top_k)
+            retriever = HybridRetriever(Retriever(top_k=args.top_k))
             try:
-                _print_retrieval(retriever.retrieve(args.question, top_k=args.top_k))
+                _print_retrieval(
+                    retriever.retrieve(args.question, top_k=args.top_k, use_reranker=args.rerank)
+                )
             finally:
                 retriever.close()
             return 0
@@ -174,6 +192,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             aws_region_name=os.environ.get("AWS_REGION"),
             model_id=os.environ.get("BEDROCK_MODEL_ID"),
             top_k=args.top_k,
+            use_reranker=args.rerank,
             max_revisions=args.max_revisions,
         )
     except (BedrockError, RetrievalError, ValueError) as e:

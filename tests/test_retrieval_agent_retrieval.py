@@ -176,6 +176,46 @@ class TestRetriever:
             retriever.close()
         assert encoder.seen == []
 
+    def test_source_filter_limits_results_to_selected_documents(self, db_path):
+        retriever = Retriever(encoder=FakeEncoder(basis(0)), db_path=db_path, top_k=5)
+        try:
+            result = retriever.retrieve("What was the hazard ratio?", source_files=["other.pdf"])
+        finally:
+            retriever.close()
+
+        assert [c.chunk_id for c in result.chunks] == ["tb-far"]
+
+    def test_source_filter_combines_with_route_filter(self, db_path):
+        retriever = Retriever(encoder=FakeEncoder(basis(0)), db_path=db_path, top_k=5)
+        try:
+            result = retriever.retrieve("Explain the mechanism of action", source_files=["trial.pdf"])
+        finally:
+            retriever.close()
+
+        assert result.route == ROUTE_TEXT
+        assert {c.chunk_id for c in result.chunks} == {"t-near", "t-mid"}
+
+    def test_source_filter_with_all_documents_returns_everything(self, db_path):
+        retriever = Retriever(encoder=FakeEncoder(basis(0)), db_path=db_path, top_k=5)
+        try:
+            result = retriever.retrieve(
+                "What was the hazard ratio?", source_files=["trial.pdf", "other.pdf"]
+            )
+        finally:
+            retriever.close()
+
+        assert result.match_count == 4
+
+    def test_empty_source_selection_raises(self, db_path):
+        encoder = FakeEncoder(basis(0))
+        retriever = Retriever(encoder=encoder, db_path=db_path, top_k=1)
+        try:
+            with pytest.raises(RetrievalError, match="source file"):
+                retriever.retrieve("Explain the results", source_files=[])
+        finally:
+            retriever.close()
+        assert encoder.seen == []
+
     def test_top_k_zero_rejected(self, db_path):
         with pytest.raises(RetrievalError, match="top_k"):
             Retriever(encoder=FakeEncoder(basis(0)), db_path=db_path, top_k=0)

@@ -168,6 +168,27 @@ class Config:
         k = self._config.get("retrieval", {}).get("top_k", 5)
         return k
 
+    def get_reranker_model(self) -> str:
+        """Get the cross-encoder model name used for re-ranking."""
+        model = self._config.get("reranker", {}).get("model_name")
+        if not model:
+            raise ConfigurationError("Reranker model not configured in config.yaml")
+        return model
+
+    def get_reranker_candidate_pool(self) -> int:
+        """Get how many hybrid-search candidates are passed to the re-ranker."""
+        pool = self._config.get("reranker", {}).get("candidate_pool")
+        if pool is None or pool < 1:
+            raise ConfigurationError("Reranker candidate_pool must be a positive integer in config.yaml")
+        return pool
+
+    def get_reranker_top_k(self) -> int:
+        """Get how many chunks are kept after re-ranking."""
+        k = self._config.get("reranker", {}).get("top_k")
+        if k is None or k < 1:
+            raise ConfigurationError("Reranker top_k must be a positive integer in config.yaml")
+        return k
+
     def get_default_bedrock_model(self) -> str:
         """Get the default Bedrock model ID."""
         model = self._config.get("bedrock", {}).get("default_model_id")

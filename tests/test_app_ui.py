@@ -3,6 +3,7 @@ Streamlit UI tests using AppTest. The pipeline service is patched, so no
 embedding model is loaded and no Bedrock call is made.
 """
 
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -11,6 +12,7 @@ import pytest
 from streamlit.proto.TextInput_pb2 import TextInput as TextInputProto
 from streamlit.testing.v1 import AppTest
 
+from src.retrieval_agent.answer_cache import CachedAnswer
 from src.retrieval_agent.bedrock_client import BedrockError
 from src.retrieval_agent.fact_check import FactCheckResult
 from src.retrieval_agent.retrieval import RetrievalResult, RetrievedChunk
@@ -19,6 +21,7 @@ from src.utils.config import Config
 
 APP_PATH = str(Path(__file__).resolve().parents[1] / "src" / "app" / "app.py")
 SERVICE_TARGET = "src.app.service.answer_question"
+FIND_TARGET = "src.app.service.find_accepted_answer"
 
 CHUNK = RetrievedChunk(
     chunk_id="c1",
@@ -123,7 +126,16 @@ def reset_config():
 @pytest.fixture(autouse=True)
 def no_real_chunk_database():
     """Keep UI tests off the real RAG database. Tests that need chunk data patch it again."""
-    with patch(CHUNK_SOURCES_TARGET, return_value=[]), patch(CHUNK_LOAD_TARGET, return_value=([], 0)):
+    with patch(CHUNK_SOURCES_TARGET, return_value=["trial.pdf"]), patch(
+        CHUNK_LOAD_TARGET, return_value=([], 0)
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def no_saved_answer_match():
+    """Default to no accepted-answer match so the pipeline runs unless a test says otherwise."""
+    with patch(FIND_TARGET, return_value=None):
         yield
 
 
@@ -498,3 +510,294 @@ def test_chunk_table_no_match_message():
     assert not at.exception
     assert any("No chunks match the filters." in i.value for i in at.info)
 
+
+QUESTIONS_LOAD_TARGET = "src.app.questions.load_questions"
+QUESTIONS_SAVE_TARGET = "src.app.questions.save_question"
+QUESTION_ROWS = [
+    {"id": 2, "created_at": "2026-10-12 12:00:00", "question": "Second question?"},
+    {"id": 1, "created_at": "2026-10-12 11:00:00", "question": "First question?"},
+]
+
+
+@pytest.fixture(autouse=True)
+def no_stored_questions():
+    """Keep the UI tests off the real database unless a test patches the questions store itself."""
+    with patch(QUESTIONS_LOAD_TARGET, return_value=[]):
+        yield
+
+
+def add_question_button(at: AppTest):
+    return next(b for b in at.button if b.label == "Add question")
+
+
+def test_questions_table_shows_stored_questions():
+    with patch(CHUNK_SOURCES_TARGET, return_value=[]), patch(
+        CHUNK_LOAD_TARGET, return_value=([], 0)
+    ), patch(QUESTIONS_LOAD_TARGET, return_value=QUESTION_ROWS):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+
+    assert not at.exception
+    assert any("2 question(s), newest first." in c.value for c in at.caption)
+    assert any(t.label == "Questions" for t in at.tabs)
+
+
+def test_questions_table_empty_message():
+    with patch(CHUNK_SOURCES_TARGET, return_value=[]), patch(CHUNK_LOAD_TARGET, return_value=([], 0)):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+
+    assert not at.exception
+    assert any("No questions have been added yet." in i.value for i in at.info)
+
+
+def test_add_question_saves_text_and_shows_success():
+    with patch(CHUNK_SOURCES_TARGET, return_value=[]), patch(
+        CHUNK_LOAD_TARGET, return_value=([], 0)
+    ), patch(QUESTIONS_SAVE_TARGET, return_value=1) as save:
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+        at.text_input(key="new_question_text").input("What is the primary endpoint?")
+        add_question_button(at).click()
+        at.run()
+
+    assert not at.exception
+    assert save.call_args.args[0] == "What is the primary endpoint?"
+    assert any("Question added." in s.value for s in at.success)
+
+
+def test_add_blank_question_shows_error():
+    with patch(CHUNK_SOURCES_TARGET, return_value=[]), patch(
+        CHUNK_LOAD_TARGET, return_value=([], 0)
+    ), patch(QUESTIONS_SAVE_TARGET, side_effect=ValueError("Cannot add an empty question.")):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+        add_question_button(at).click()
+        at.run()
+
+    assert not at.exception
+    assert any("Cannot add an empty question." in e.value for e in at.error)
+
+
+DOC_SEARCH_KEY = "document_search"
+DOC_CHECKBOX_KEY_PREFIX = "document_checkbox::"
+
+
+def doc_checkbox(at: AppTest, source: str):
+    return at.checkbox(key=f"{DOC_CHECKBOX_KEY_PREFIX}{source}")
+
+
+def doc_checkboxes(at: AppTest):
+    return [c for c in at.checkbox if (c.key or "").startswith(DOC_CHECKBOX_KEY_PREFIX)]
+
+
+def test_document_checkboxes_list_all_sources_and_select_them_by_default():
+    with patch(CHUNK_SOURCES_TARGET, return_value=["dosing.pdf", "trial.pdf"]):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+
+    assert not at.exception
+    assert [c.label for c in doc_checkboxes(at)] == ["dosing.pdf", "trial.pdf"]
+    assert all(c.value for c in doc_checkboxes(at))
+
+
+def test_document_selector_has_search_box_and_is_on_ask_tab(app):
+    labels = [t.label for t in app.text_input]
+    assert "Search documents" in labels
+    assert "Enter your clinical trial / medical research question:" in labels
+    assert [c.label for c in doc_checkboxes(app)] == ["trial.pdf"]
+
+
+def test_no_documents_shows_message_and_no_selector():
+    with patch(CHUNK_SOURCES_TARGET, return_value=[]):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+
+    assert not at.exception
+    assert len(doc_checkboxes(at)) == 0
+    assert any("No documents found in the chunk table." in i.value for i in at.info)
+
+
+def test_search_filters_document_checkboxes():
+    with patch(CHUNK_SOURCES_TARGET, return_value=["dosing.pdf", "trial.pdf", "trial_v2.pdf"]):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+        at.text_input(key=DOC_SEARCH_KEY).set_value("TRIAL").run()
+
+    assert not at.exception
+    assert [c.label for c in doc_checkboxes(at)] == ["trial.pdf", "trial_v2.pdf"]
+
+
+def test_unchecked_document_is_passed_to_the_pipeline_only_when_selected():
+    with patch(CHUNK_SOURCES_TARGET, return_value=["dosing.pdf", "trial.pdf"]):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+        doc_checkbox(at, "dosing.pdf").set_value(False).run()
+        with patch(SERVICE_TARGET, return_value=approved_result()) as service:
+            fill_and_run(at)
+
+    assert not at.exception
+    assert service.call_args.kwargs["source_files"] == ["trial.pdf"]
+
+
+def test_unchecked_document_stays_unchecked_after_search_changes():
+    with patch(CHUNK_SOURCES_TARGET, return_value=["dosing.pdf", "trial.pdf"]):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+        doc_checkbox(at, "dosing.pdf").set_value(False).run()
+        at.text_input(key=DOC_SEARCH_KEY).set_value("trial").run()
+        at.text_input(key=DOC_SEARCH_KEY).set_value("").run()
+
+    assert not at.exception
+    assert doc_checkbox(at, "dosing.pdf").value is False
+    assert doc_checkbox(at, "trial.pdf").value is True
+
+
+def test_all_documents_selected_are_passed_to_the_pipeline():
+    with patch(CHUNK_SOURCES_TARGET, return_value=["dosing.pdf", "trial.pdf"]):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+        with patch(SERVICE_TARGET, return_value=approved_result()) as service:
+            fill_and_run(at)
+
+    assert service.call_args.kwargs["source_files"] == ["dosing.pdf", "trial.pdf"]
+
+
+def test_clearing_document_selection_shows_error_without_loading_model(app):
+    app.button(key="clear_all_documents").click().run()
+    with patch("src.app.service.get_query_encoder") as encoder_factory:
+        fill_and_run(app)
+
+    assert not app.exception
+    assert any("Select at least one document" in e.value for e in app.error)
+    encoder_factory.assert_not_called()
+
+RERANK_CHECKBOX_KEY = "use_reranker"
+
+
+def test_reranker_checkbox_is_off_by_default(app):
+    checkbox = app.checkbox(key=RERANK_CHECKBOX_KEY)
+    assert checkbox.value is False
+
+
+def test_reranker_is_not_used_by_default():
+    with patch(CHUNK_SOURCES_TARGET, return_value=["trial.pdf"]):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+        with patch(SERVICE_TARGET, return_value=approved_result()) as service:
+            fill_and_run(at)
+
+    assert service.call_args.kwargs["use_reranker"] is False
+
+
+def test_checked_reranker_is_passed_to_the_pipeline():
+    with patch(CHUNK_SOURCES_TARGET, return_value=["trial.pdf"]):
+        at = AppTest.from_file(APP_PATH, default_timeout=60)
+        at.run()
+        at.checkbox(key=RERANK_CHECKBOX_KEY).set_value(True).run()
+        with patch(SERVICE_TARGET, return_value=approved_result()) as service:
+            fill_and_run(at)
+
+    assert not at.exception
+    assert service.call_args.kwargs["use_reranker"] is True
+
+
+SAVED_TEXT = "Saved hazard answer [trial.pdf, p.2]."
+SAVED_AT = datetime(2024, 5, 1, 10, 30)
+EXACT_MATCH = CachedAnswer(
+    kind="exact",
+    id=7,
+    question="What was the hazard ratio?",
+    answer=SAVED_TEXT,
+    created_at=SAVED_AT,
+    score=1.0,
+)
+SIMILAR_MATCH = CachedAnswer(
+    kind="similar",
+    id=7,
+    question="What is the hazard ratio?",
+    answer=SAVED_TEXT,
+    created_at=SAVED_AT,
+    score=0.87,
+)
+
+
+def shows_saved_answer(at: AppTest) -> bool:
+    return any(SAVED_TEXT in m.value for m in at.markdown)
+
+
+def shows_similar_prompt(at: AppTest) -> bool:
+    return any("similar question was answered before" in w.value for w in at.warning)
+
+
+def test_exact_saved_answer_is_shown_without_running_the_pipeline(app):
+    with patch(FIND_TARGET, return_value=EXACT_MATCH), patch(
+        SERVICE_TARGET, return_value=approved_result()
+    ) as service:
+        fill_and_run(app)
+
+    assert not app.exception
+    assert not service.called
+    assert shows_saved_answer(app)
+    assert not shows_similar_prompt(app)
+
+
+def test_similar_match_asks_before_showing_the_saved_answer(app):
+    with patch(FIND_TARGET, return_value=SIMILAR_MATCH), patch(
+        SERVICE_TARGET, return_value=approved_result()
+    ) as service:
+        fill_and_run(app)
+
+    assert not app.exception
+    assert not service.called
+    assert shows_similar_prompt(app)
+    assert not shows_saved_answer(app)
+
+
+def test_yes_on_similar_match_shows_the_saved_answer(app):
+    with patch(FIND_TARGET, return_value=SIMILAR_MATCH), patch(
+        SERVICE_TARGET, return_value=approved_result()
+    ) as service:
+        fill_and_run(app)
+        app.button(key="similar_yes").click()
+        app.run()
+
+    assert not app.exception
+    assert not service.called
+    assert shows_saved_answer(app)
+    assert not shows_similar_prompt(app)
+
+
+def test_no_on_similar_match_runs_the_pipeline(app):
+    with patch(FIND_TARGET, return_value=SIMILAR_MATCH), patch(
+        SERVICE_TARGET, return_value=approved_result()
+    ) as service:
+        fill_and_run(app)
+        app.button(key="similar_no").click()
+        app.run()
+
+    assert not app.exception
+    assert service.call_count == 1
+    assert not shows_saved_answer(app)
+    assert not shows_similar_prompt(app)
+
+
+def test_similar_prompt_disappears_when_the_question_is_edited(app):
+    with patch(FIND_TARGET, return_value=SIMILAR_MATCH), patch(SERVICE_TARGET):
+        fill_and_run(app)
+        app.text_input(key="research_question").input("A different question").run()
+
+    assert not app.exception
+    assert not shows_similar_prompt(app)
+    assert not shows_saved_answer(app)
+
+
+def test_lookup_failure_is_shown_and_the_pipeline_is_not_run(app):
+    with patch(FIND_TARGET, side_effect=duckdb.Error("database is locked")), patch(
+        SERVICE_TARGET, return_value=approved_result()
+    ) as service:
+        fill_and_run(app)
+
+    assert not app.exception
+    assert not service.called
+    assert any("Could not check accepted answers" in e.value for e in app.error)
